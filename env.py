@@ -1,7 +1,7 @@
 import numpy as np
 class Environment:
     def __init__(self, data, initial = 100000, trade_amount = 5000,
-                 trans_cost=0.005, cap_low=0.1, cap_high = 10):
+                 trans_cost=0.005, cap_low=0.1, cap_high = 11):
         self.data = data
 
         self.initial = initial
