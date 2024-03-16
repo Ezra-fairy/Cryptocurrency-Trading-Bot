@@ -1,7 +1,7 @@
 import numpy as np
 class Environment:
     def __init__(self, data, initial = 100000, trade_amount = 5000,
-                 trans_cost=0.005, cap_low=0.1, cap_high = 11):
+                 trans_cost=0.005, cap_low=0.1, cap_high = 20):
         self.data = data
 
         self.initial = initial
@@ -43,6 +43,7 @@ class Environment:
         self.terminal = self.check_terminal()
 
         if self.terminal != 0:
+            print("terminated at: ", self.data.frame.index[self.cur_idx])
             # If we have enough profit and quit
             if self.terminal== 1:
                 self.reward = 10
@@ -54,18 +55,20 @@ class Environment:
                 # Also penalize if lose it too soon
                 self.reward += -5 * (1 - self.cur_idx / self.terminal_idx)
             # If end of episode
-            if self.cur_idx < self.terminal_idx:
+            elif self.terminal==3:
                 # penalize it for going too long but still depend on the total cap
                 # if 1.5 times initial, we can take it as average
                 self.reward = self.total_capital / self.initial - 1.5
-
+            print("final step reward: ", self.reward)
         if self.terminal==0:
             self.cur_idx += 1
             self.current_price = self.data.frame.iloc[self.cur_idx, :]['Adj Close']
             self.state = self.get_state(self.cur_idx)
-        return self.state, self.reward, self.terminal, self.total_capital
+
+        return self.state, self.reward, self.terminal, self.total_capital, self.cur_idx
 
     def calculate_reward(self):
+        reward = 0
         # Buy Action
         if self.action == 1:
             if self.cash >= self.trade_amount:
@@ -74,6 +77,8 @@ class Environment:
             elif self.cash > 0:
                 self.asset_holding += self.cash*(1-self.trans_cost) / self.current_price
                 self.cash = 0
+            elif self.cash == 0:
+                reward -= 0.2
 
         # Sell Action
         if self.action == -1:
@@ -85,20 +90,31 @@ class Environment:
             elif self.asset_holding > 0:
                 self.cash += self.asset_holding * self.current_price * (1 - self.trans_cost)
                 self.asset_holding = 0
+            elif self.asset_holding == 0:
+                reward -= 0.2
 
+        # Holding Action
+        if self.action == 0:
+            reward -= 0.0
 
         new_total_value = self.cash + self.asset_holding * self.current_price
-        reward = 100 * (new_total_value - self.total_capital)/self.total_capital
+        # print("Current Price: ", self.current_price)
+        # print("Current Cash: ", self.cash)
+        # print("Current Asset Holding: ", self.asset_holding)
+        #
+        # print("100 * (new_total_value - self.total_capital)/self.total_capital",
+        #       100 * (new_total_value - self.total_capital) / self.total_capital)
+        reward += 100 * (new_total_value - self.total_capital)/self.total_capital
         self.total_capital = new_total_value
-
-        # penalize holding
-        if self.action == 0:
-            reward -= 0.1
-
+        # print("New total capital: ", self.total_capital)
+        #
+        # print("final reward", reward, "Action done: ", self.action)
+        #
+        # print("------------------------------------")
         return reward
+
     def get_state(self, idx):
         state = self.data[idx][:]
-        # print("Adj Close", self.data[idx][0])
         state = self.data.scaler.transform(state.reshape(1, -1))
         state = np.concatenate([state, [[self.total_capital / self.initial,
                                          self.cash / self.total_capital,

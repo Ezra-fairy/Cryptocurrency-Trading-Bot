@@ -101,6 +101,11 @@ class DQNAgent:
             dones = np.vstack([t.Dones for t in batch]).astype(np.uint8)
             dones = torch.from_numpy(dones).float().to(DEVICE)
 
+
+            # Right way to update
+            # next_actions = self.actor_online(next_states).max(1)[1].unsqueeze(1)
+            # next_state_values = self.actor_target(next_states).gather(1, next_actions)
+
             # ACTOR UPDATE
             # Compute next state actions and state values
             next_state_values = self.actor_target(next_states).max(1)[0].unsqueeze(1)
@@ -121,6 +126,3 @@ class DQNAgent:
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau * local_param.data + (1.0 - tau) * target_param.data)
 
-
-if __name__ == '__main__':
-    Terminal = 0

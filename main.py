@@ -3,13 +3,14 @@ from env import Environment
 from replay import *
 from parameters import *
 from DQN import DQNAgent, DuellingDQN
+from lineGraph import drawLineGraph
 import numpy as np
 
 def train():
     # Setting up environment and dataset
     asset_name = "ETH-USD"
-    asset = DataGetter(asset=asset_name, start_date="2017-11-09", end_date="2023-03-06")
-    test_asset = DataGetter(asset=asset_name, start_date="2023-03-06", end_date="2024-03-06")
+    asset = DataGetter(asset=asset_name, start_date="2017-11-09", end_date="2023-03-14")
+    test_asset = DataGetter(asset=asset_name, start_date="2023-03-14", end_date="2024-03-14")
     env = Environment(asset)
     test_env = Environment(test_asset)
 
@@ -18,7 +19,7 @@ def train():
     agent = DQNAgent(actor_net=DuellingDQN, memory=memory)
 
     # Main training loop
-    N_EPISODES = 60
+    N_EPISODES = 70
     all_scores = []
     all_capitals = []
     all_test_scores = []
@@ -26,6 +27,11 @@ def train():
     eps = EPS_START
     act_dict = {0: -1, 1: 1, 2: 0}
     act_explain_dict = {0: "Sell", 1: "Buy", 2: "Hold"}
+
+    # Store actions into a numpy array.
+    trainActionArray = []
+    testActionArray = []
+    train_terminate_index = 0
 
     # te_score_min = -np.Inf
     for episode in range(1, 1 + N_EPISODES):
@@ -37,7 +43,12 @@ def train():
         while True:
             actions = agent.act(state, eps)
             action = act_dict[actions]
-            next_state, reward, terminal, total_capital = env.step(action)
+
+            # Only store the action to draw graph in the last episode
+            if episode == N_EPISODES:
+                trainActionArray.append(action)
+
+            next_state, reward, terminal, total_capital, index = env.step(action)
             next_state = next_state.reshape(-1, STATE_SPACE)
 
             # Convert terminal into Boolean value dones then store it into Transition because we need boolean while updating networks
@@ -52,6 +63,7 @@ def train():
             if terminal != 0:
                 print("terminate with code ", terminal)
                 capital_left = total_capital - 100000
+                train_terminate_index = index
                 break
 
 
@@ -70,13 +82,19 @@ def train():
             actions = agent.act(state)
             # print("Chose Action", act_explain_dict[actions])
             action = act_dict[actions]
-            next_state, test_reward, terminal, test_total_capital = test_env.step(action)
+
+            # Only store the action to draw graph in the last episode
+            if episode == N_EPISODES:
+                testActionArray.append(action)
+
+            next_state, test_reward, terminal, test_total_capital, index = test_env.step(action)
             next_state = next_state.reshape(-1, STATE_SPACE)
             state = next_state
             test_episode_rewards.append(test_reward)
 
             if terminal != 0:
                 test_capital_left = test_total_capital - 100000
+                test_terminate_index = index
                 break
 
         ave_test_reward = sum(test_episode_rewards) / len(test_episode_rewards)
@@ -97,6 +115,9 @@ def train():
     print(f"Average Testing Capital left: {sum(all_test_capitals) / len(all_test_capitals)}")
     print(f"Average Training Reward Got: {sum(all_scores) / len(all_scores)}")
     print(f"Average Testing Reward Got: {sum(all_test_scores) / len(all_test_scores)}")
+    # Draw the graph
+    drawLineGraph(asset.dateArray[:train_terminate_index+1], asset.priceArray[:train_terminate_index+1], trainActionArray, "Train.png")
+    drawLineGraph(test_asset.dateArray, test_asset.priceArray, testActionArray, "Test.png")
 
 if __name__ == '__main__':
     train()

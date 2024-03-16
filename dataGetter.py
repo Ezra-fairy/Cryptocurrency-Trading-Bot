@@ -83,6 +83,9 @@ class DataGetter:
         print(df.head())
         res = np.array(df)
         print(res.shape)
+        self.priceArray = df["Adj Close"].to_numpy()
+        self.dateArray = df.index.strftime('%Y-%m-%d').to_numpy()
+
         return res
 
     def scaleData(self):
