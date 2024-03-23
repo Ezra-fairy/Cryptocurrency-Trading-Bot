@@ -27,6 +27,10 @@ class DataGetter:
     def getData(self):
         df     = yf.download([self.asset], start=self.start_date, end=self.end_date, interval=self.freq)
         df_ref = yf.download([self.ref], start=self.start_date, end=self.end_date, interval=self.freq)
+        print(df.head())
+        print(df.shape)
+        print(df_ref.head())
+        print(df_ref.shape)
 
         # Features:
         # 1. Price and Volume Changes

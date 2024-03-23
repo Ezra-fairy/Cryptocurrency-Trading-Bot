@@ -3,22 +3,21 @@ from env import Environment
 from replay import *
 from parameters import *
 from DQN import DQNAgent, DuellingDQN
-from lineGraph import draw_action_graph, plot_episode_values
 import numpy as np
 
-def train(asset_name, cap_high, start_date):
+def train(asset_name):
     # Setting up environment and dataset
-    asset = DataGetter(asset=asset_name, start_date=start_date, end_date="2023-03-14")
+    asset = DataGetter(asset=asset_name, start_date="2000-05-31", end_date="2023-03-14")
     test_asset = DataGetter(asset=asset_name, start_date="2023-03-14", end_date="2024-03-14")
-    env = Environment(asset, cap_high=cap_high)
-    test_env = Environment(test_asset, cap_high=cap_high)
+    env = Environment(asset)
+    test_env = Environment(test_asset)
 
     # Initiate Agent
     memory = ReplayMemory()
     agent = DQNAgent(actor_net=DuellingDQN, memory=memory)
 
     # Main training loop
-    N_EPISODES = 250
+    N_EPISODES = 1
     all_scores = []
     all_capitals = []
     all_test_scores = []
@@ -40,7 +39,7 @@ def train(asset_name, cap_high, start_date):
         state = env.reset()
         state = state.reshape(-1, STATE_SPACE)
         while True:
-            actions = agent.act(state, eps)
+            actions = 1
             action = act_dict[actions]
 
             # Only store the action to draw graph in the last episode
@@ -52,10 +51,6 @@ def train(asset_name, cap_high, start_date):
 
             # Convert terminal into Boolean value dones then store it into Transition because we need boolean while updating networks
             done = terminal != 0
-
-            t = Transition(state, actions, reward, next_state, done)
-            agent.memory.store(t)
-            agent.learn()
 
             state = next_state
             episode_rewards.append(reward)
@@ -78,7 +73,7 @@ def train(asset_name, cap_high, start_date):
         test_capital_left = 0
 
         while True:
-            actions = agent.act(state)
+            actions = 1
             # print("Chose Action", act_explain_dict[actions])
             action = act_dict[actions]
 
@@ -110,23 +105,16 @@ def train(asset_name, cap_high, start_date):
         #     te_score_min = test_reward
         #     torch.save(agent.actor_online.state_dict(), "online.pt")
         #     torch.save(agent.actor_target.state_dict(), "target.pt")
+    print(f"-----------------------------------{asset_code}------------------------------------------------")
     print(f"Average Training Capital left: {sum(all_capitals) / len(all_capitals)}")
     print(f"Average Testing Capital left: {sum(all_test_capitals) / len(all_test_capitals)}")
     print(f"Average Training Reward Got: {sum(all_scores) / len(all_scores)}")
     print(f"Average Testing Reward Got: {sum(all_test_scores) / len(all_test_scores)}")
-    # Draw the action graph
-    draw_action_graph(asset.dateArray[:train_terminate_index+1], asset.priceArray[:train_terminate_index+1], trainActionArray, f"{asset_name}/{asset_name}_train_actions.png")
-    draw_action_graph(test_asset.dateArray, test_asset.priceArray, testActionArray, f"{asset_name}/{asset_name}_test_actions.png")
-    plot_episode_values(all_scores, f"{asset_name}/{asset_name}_train_reward.png", "Ave Reward", True)
-    plot_episode_values(all_capitals, f"{asset_name}/{asset_name}_train_capital.png", "Capital Left", False)
-    plot_episode_values(all_test_scores, f"{asset_name}/{asset_name}_test_reward.png", "Ave Reward", True)
-    plot_episode_values(all_test_capitals, f"{asset_name}/{asset_name}_test_capital.png", "Capital Left", False)
+    # Draw the graph
 
 if __name__ == '__main__':
-    # asset_codes = ["ETH-USD", "BNB-USD", "XRP-USD", "SOL-USD", "DOGE-USD",
-    #                "ADA-USD", "MATIC-USD", "AVAX-USD", "WAVES-USD"]
-    asset_codes = ["ETH-USD"]
+    asset_codes = ["ETH-USD", "BNB-USD", "XRP-USD", "SOL-USD", "DOGE-USD",
+                   "ADA-USD", "MATIC-USD", "AVAX-USD", "WAVES-USD", "BTC-USD"]
+    # asset_codes = ["ETH-USD"]
     for asset_code in asset_codes:
-        print(f"---------------------------{asset_code}----------------------------")
-        train(asset_code, 30, "2017-11-09")
-        print(f"---------------------------END----------------------------")
+        train(asset_code)

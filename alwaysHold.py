@@ -3,14 +3,12 @@ from env import Environment
 from replay import *
 from parameters import *
 from DQN import DQNAgent, DuellingDQN
-from lineGraph import drawLineGraph
 import numpy as np
 
-def train():
+def train(asset_name):
     # Setting up environment and dataset
-    asset_name = "ETH-USD"
-    asset = DataGetter(asset=asset_name, start_date="2017-11-09", end_date="2023-03-09")
-    test_asset = DataGetter(asset=asset_name, start_date="2023-03-09", end_date="2024-03-09")
+    asset = DataGetter(asset=asset_name, start_date="2000-05-31", end_date="2023-03-14")
+    test_asset = DataGetter(asset=asset_name, start_date="2023-03-14", end_date="2024-03-14")
     env = Environment(asset)
     test_env = Environment(test_asset)
 
@@ -19,7 +17,7 @@ def train():
     agent = DQNAgent(actor_net=DuellingDQN, memory=memory)
 
     # Main training loop
-    N_EPISODES = 10
+    N_EPISODES = 1
     all_scores = []
     all_capitals = []
     all_test_scores = []
@@ -41,7 +39,7 @@ def train():
         state = env.reset()
         state = state.reshape(-1, STATE_SPACE)
         while True:
-            actions = 1
+            actions = 0
             action = act_dict[actions]
 
             # Only store the action to draw graph in the last episode
@@ -75,7 +73,7 @@ def train():
         test_capital_left = 0
 
         while True:
-            actions = 1
+            actions = 0
             # print("Chose Action", act_explain_dict[actions])
             action = act_dict[actions]
 
@@ -107,13 +105,16 @@ def train():
         #     te_score_min = test_reward
         #     torch.save(agent.actor_online.state_dict(), "online.pt")
         #     torch.save(agent.actor_target.state_dict(), "target.pt")
+    print(f"-----------------------------------{asset_code}------------------------------------------------")
     print(f"Average Training Capital left: {sum(all_capitals) / len(all_capitals)}")
     print(f"Average Testing Capital left: {sum(all_test_capitals) / len(all_test_capitals)}")
     print(f"Average Training Reward Got: {sum(all_scores) / len(all_scores)}")
     print(f"Average Testing Reward Got: {sum(all_test_scores) / len(all_test_scores)}")
     # Draw the graph
-    drawLineGraph(asset.dateArray[:train_terminate_index+1], asset.priceArray[:train_terminate_index+1], trainActionArray, "Train.png")
-    drawLineGraph(test_asset.dateArray, test_asset.priceArray, testActionArray, "Test.png")
 
 if __name__ == '__main__':
-    train()
+    # asset_codes = ["ETH-USD", "BNB-USD", "XRP-USD", "SOL-USD", "DOGE-USD",
+    #                "ADA-USD", "MATIC-USD", "AVAX-USD", "WAVES-USD"]
+    asset_codes = ["ETH-USD"]
+    for asset_code in asset_codes:
+        train(asset_code)

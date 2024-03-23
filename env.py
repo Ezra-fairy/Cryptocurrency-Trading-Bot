@@ -1,7 +1,7 @@
 import numpy as np
 class Environment:
     def __init__(self, data, initial = 100000, trade_amount = 5000,
-                 trans_cost=0.005, cap_low=0.1, cap_high = 20):
+                 trans_cost=0.005, cap_low=0.1, cap_high = 100):
         self.data = data
 
         self.initial = initial
@@ -58,8 +58,8 @@ class Environment:
             elif self.terminal==3:
                 # penalize it for going too long but still depend on the total cap
                 # if 1.5 times initial, we can take it as average
-                self.reward = self.total_capital / self.initial - 1.5
-            print("final step reward: ", self.reward)
+                self.reward = self.total_capital / self.initial - 1
+            # print("final step reward: ", self.reward)
         if self.terminal==0:
             self.cur_idx += 1
             self.current_price = self.data.frame.iloc[self.cur_idx, :]['Adj Close']
@@ -77,8 +77,8 @@ class Environment:
             elif self.cash > 0:
                 self.asset_holding += self.cash*(1-self.trans_cost) / self.current_price
                 self.cash = 0
-            elif self.cash == 0:
-                reward -= 0.2
+            elif self.cash <= 0:
+                reward -= 1
 
         # Sell Action
         if self.action == -1:
@@ -90,12 +90,12 @@ class Environment:
             elif self.asset_holding > 0:
                 self.cash += self.asset_holding * self.current_price * (1 - self.trans_cost)
                 self.asset_holding = 0
-            elif self.asset_holding == 0:
-                reward -= 0.2
+            elif self.asset_holding <= 0:
+                reward -= 1
 
         # Holding Action
         if self.action == 0:
-            reward -= 0.0
+            reward -= 0.5
 
         new_total_value = self.cash + self.asset_holding * self.current_price
         # print("Current Price: ", self.current_price)
