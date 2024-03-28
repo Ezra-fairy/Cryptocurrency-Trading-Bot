@@ -6,7 +6,7 @@ from DQN import DQNAgent, DuellingDQN
 from lineGraph import draw_action_graph, plot_episode_values
 import numpy as np
 
-def train(asset_name, cap_high, start_date):
+def train(asset_name, cap_high, start_date, i):
     # Setting up environment and dataset
     asset = DataGetter(asset=asset_name, start_date=start_date, end_date="2023-03-14")
     test_asset = DataGetter(asset=asset_name, start_date="2023-03-14", end_date="2024-03-14")
@@ -18,7 +18,7 @@ def train(asset_name, cap_high, start_date):
     agent = DQNAgent(actor_net=DuellingDQN, memory=memory)
 
     # Main training loop
-    N_EPISODES = 250
+    N_EPISODES = 100
     all_scores = []
     all_capitals = []
     all_test_scores = []
@@ -120,13 +120,13 @@ def train(asset_name, cap_high, start_date):
     plot_episode_values(all_scores, f"{asset_name}/{asset_name}_train_reward.png", "Ave Reward", True)
     plot_episode_values(all_capitals, f"{asset_name}/{asset_name}_train_capital.png", "Capital Left", False)
     plot_episode_values(all_test_scores, f"{asset_name}/{asset_name}_test_reward.png", "Ave Reward", True)
-    plot_episode_values(all_test_capitals, f"{asset_name}/{asset_name}_test_capital.png", "Capital Left", False)
+    plot_episode_values(all_test_capitals, f"{asset_name}/{i}_{asset_name}_test_capital.png", "Capital Left", False)
 
 if __name__ == '__main__':
     # asset_codes = ["ETH-USD", "BNB-USD", "XRP-USD", "SOL-USD", "DOGE-USD",
     #                "ADA-USD", "MATIC-USD", "AVAX-USD", "WAVES-USD"]
     asset_codes = ["ETH-USD"]
-    for asset_code in asset_codes:
-        print(f"---------------------------{asset_code}----------------------------")
-        train(asset_code, 30, "2017-11-09")
+    for i in range(6):
+        print(f"---------------------------{i}----------------------------")
+        train("ETH-USD", 10,  "2017-11-09", i)
         print(f"---------------------------END----------------------------")
